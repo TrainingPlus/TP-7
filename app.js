@@ -3,11 +3,16 @@ import {
   signInWithPopup, signOut, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, ref, uploadBytes, getDownloadURL 
 } from './firebase-config.js';
 
+// Global Application State Variables
 let currentUser = null;
 let selectedRole = 'employee';
 let activeLanguage = 'en';
 
-// --- Role Tab Selection Function ---
+// ==========================================
+// 1. GLOBAL WINDOW FUNCTIONS (HTML Handlers)
+// ==========================================
+
+// Role selection tabs on login screen
 window.selectRole = (role) => {
   selectedRole = role;
   document.querySelectorAll('.role-tab').forEach(tab => {
@@ -18,12 +23,14 @@ window.selectRole = (role) => {
     }
   });
   
-  const roleFormatted = role.charAt(0).toUpperCase() + role.slice(1);
   const heading = document.getElementById('selected-role-heading');
-  if (heading) heading.innerText = `${roleFormatted} Sign In`;
+  if (heading) {
+    const roleFormatted = role.charAt(0).toUpperCase() + role.slice(1);
+    heading.innerText = `${roleFormatted} Sign In`;
+  }
 };
 
-// --- Language Toggle ---
+// Language toggle button (AR / EN)
 window.toggleLanguage = () => {
   activeLanguage = activeLanguage === 'en' ? 'ar' : 'en';
   const btn = document.getElementById('lang-toggle-btn');
@@ -31,24 +38,30 @@ window.toggleLanguage = () => {
   document.documentElement.dir = activeLanguage === 'ar' ? 'rtl' : 'ltr';
 };
 
-// --- Chat Widget Toggle ---
+// Floating chat panel toggle
 window.toggleChatWidget = () => {
-  const chatBox = document.getElementById('chat-widget');
-  if (chatBox) chatBox.classList.toggle('hidden');
+  const chatWidget = document.getElementById('chat-widget');
+  if (chatWidget) {
+    chatWidget.classList.toggle('hidden');
+  }
 };
 
-// --- Real-time Footer Clock ---
+// ==========================================
+// 2. INITIALIZATION & AUTHENTICATION
+// ==========================================
+
+// Real-time Footer Clock update
 function updateFooterClock() {
-  const now = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
   const clockElem = document.getElementById('footer-datetime');
   if (clockElem) {
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
     clockElem.innerText = now.toLocaleDateString(activeLanguage === 'ar' ? 'ar-BH' : 'en-US', options);
   }
 }
 setInterval(updateFooterClock, 1000);
 
-// --- Google Authentication & Role Logic ---
+// Google Sign-In Logic
 document.getElementById('google-login-btn')?.addEventListener('click', async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -58,41 +71,33 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Auto-approve if the selected role is Manager, otherwise set to pending
+      // Auto-approve Manager logins, keep Employee/Operator pending approval
       const initialStatus = selectedRole === 'manager' ? 'approved' : 'pending';
 
-      await setDoc(userRef, {
+      const newUserPayload = {
         uid: user.uid,
-        name: user.displayName,
+        name: user.displayName || 'Unknown User',
         email: user.email,
         role: selectedRole,
         status: initialStatus,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      await setDoc(userRef, newUserPayload);
 
       if (initialStatus === 'pending') {
-        alert(`Account submitted as ${selectedRole}. Manager approval required.`);
+        alert(`Account submitted as ${selectedRole}. Waiting for Manager approval.`);
         await signOut(auth);
       } else {
-        const newUserData = {
-          uid: user.uid,
-          name: user.displayName,
-          email: user.email,
-          role: selectedRole,
-          status: 'approved'
-        };
-        currentUser = newUserData;
-        initializeDashboard(newUserData);
+        currentUser = newUserPayload;
+        initializeDashboard(newUserPayload);
       }
     } else {
       let userData = userSnap.data();
 
-      // If logging in as manager, ensure status is approved and role is manager
+      // Ensure Manager role updates correctly on sign-in
       if (selectedRole === 'manager') {
-        await updateDoc(userRef, {
-          role: 'manager',
-          status: 'approved'
-        });
+        await updateDoc(userRef, { role: 'manager', status: 'approved' });
         userData.role = 'manager';
         userData.status = 'approved';
       }
@@ -106,25 +111,44 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
       }
     }
   } catch (error) {
-    console.error("Auth Error:", error);
-    alert("Authentication failed: " + error.message);
+    console.error("Authentication Error:", error);
+    alert("Login failed: " + error.message);
   }
 });
 
-// --- Dashboard Router ---
+// Logout Handler
+document.getElementById('logout-btn')?.addEventListener('click', async () => {
+  try {
+    await signOut(auth);
+    window.location.reload();
+  } catch (err) {
+    console.error("Logout Error:", err);
+  }
+});
+
+// ==========================================
+// 3. DASHBOARD ROUTING
+// ==========================================
+
 function initializeDashboard(userData) {
+  // Reveal Top Header & Controls
   document.getElementById('auth-section')?.classList.add('hidden');
   document.getElementById('main-header')?.classList.remove('hidden');
   document.getElementById('toggle-chat-btn')?.classList.remove('hidden');
 
+  // Hide All Workspace Views
   document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
 
-  // Nav Links Control
+  // Get Nav Buttons
   const navManager = document.getElementById('nav-manager-btn');
   const navCourses = document.getElementById('nav-courses-btn');
   const navDirectory = document.getElementById('nav-directory-btn');
   const navExcel = document.getElementById('download-excel-btn');
 
+  // Hide Nav Pills initially
+  [navManager, navCourses, navDirectory, navExcel].forEach(btn => btn?.classList.add('hidden'));
+
+  // Render view based on assigned user role
   if (userData.role === 'employee') {
     document.getElementById('employee-view')?.classList.remove('hidden');
     navDirectory?.classList.remove('hidden');
@@ -137,133 +161,241 @@ function initializeDashboard(userData) {
     navManager?.classList.remove('hidden');
     navCourses?.classList.remove('hidden');
     navExcel?.classList.remove('hidden');
+    
+    listenForPendingUsers();
+    loadManagerData();
   }
-
-  checkStudentMilestoneReminders();
 }
 
-// --- Logout ---
-document.getElementById('logout-btn')?.addEventListener('click', async () => {
-  await signOut(auth);
-  window.location.reload();
+// ==========================================
+// 4. MANAGER WORKSPACE ACTIONS
+// ==========================================
+
+function listenForPendingUsers() {
+  const pendingAlert = document.getElementById('manager-pending-alert');
+  const pendingName = document.getElementById('pending-user-name');
+
+  onSnapshot(query(collection(db, "users"), where("status", "==", "pending")), (snapshot) => {
+    if (!snapshot.empty) {
+      const docData = snapshot.docs[0].data();
+      const docId = snapshot.docs[0].id;
+
+      if (pendingName) pendingName.innerText = docData.name;
+      pendingAlert?.classList.remove('hidden');
+
+      // Approve User Button
+      const approveBtn = document.getElementById('approve-user-btn');
+      if (approveBtn) {
+        approveBtn.onclick = async () => {
+          await updateDoc(doc(db, "users", docId), { status: "approved" });
+          alert(`User ${docData.name} approved.`);
+          pendingAlert?.classList.add('hidden');
+        };
+      }
+
+      // Reject User Button
+      const rejectBtn = document.getElementById('reject-user-btn');
+      if (rejectBtn) {
+        rejectBtn.onclick = async () => {
+          await deleteDoc(doc(db, "users", docId));
+          alert(`User ${docData.name} rejected.`);
+          pendingAlert?.classList.add('hidden');
+        };
+      }
+    } else {
+      pendingAlert?.classList.add('hidden');
+    }
+  });
+}
+
+async function loadManagerData() {
+  // Load Courses
+  const coursesList = document.getElementById('manager-courses-list');
+  if (coursesList) {
+    onSnapshot(collection(db, "courses"), (snapshot) => {
+      coursesList.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const item = document.createElement('li');
+        item.innerText = docSnap.data().name;
+        coursesList.appendChild(item);
+      });
+    });
+  }
+
+  // Load Staff
+  const staffList = document.getElementById('manager-staff-list');
+  if (staffList) {
+    onSnapshot(query(collection(db, "users"), where("status", "==", "approved")), (snapshot) => {
+      staffList.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const u = docSnap.data();
+        const item = document.createElement('li');
+        item.innerText = `${u.name} (${u.role})`;
+        staffList.appendChild(item);
+      });
+    });
+  }
+}
+
+// Add Course (Manager Form)
+document.getElementById('manager-add-course-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('manager-course-name');
+  if (!input.value.trim()) return;
+
+  try {
+    await addDoc(collection(db, "courses"), { name: input.value.trim(), createdAt: new Date().toISOString() });
+    alert("Course added successfully.");
+    input.value = "";
+  } catch (err) {
+    alert("Error adding course: " + err.message);
+  }
 });
 
-// --- Student Check (Employee) ---
+// Add Employee (Manager Form)
+document.getElementById('manager-add-employee-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('manager-employee-name').value;
+  const email = document.getElementById('manager-employee-email').value;
+
+  try {
+    await addDoc(collection(db, "users"), {
+      name: name,
+      email: email,
+      role: "employee",
+      status: "approved",
+      createdAt: new Date().toISOString()
+    });
+    alert("Employee record created.");
+    e.target.reset();
+  } catch (err) {
+    alert("Error adding employee: " + err.message);
+  }
+});
+
+// ==========================================
+// 5. OPERATOR WORKSPACE ACTIONS
+// ==========================================
+
+document.getElementById('operator-add-course-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const courseInput = document.getElementById('course-name-input');
+  if (!courseInput.value.trim()) return;
+
+  try {
+    await addDoc(collection(db, "courses"), {
+      name: courseInput.value.trim(),
+      createdBy: currentUser ? currentUser.name : "Operator",
+      createdAt: new Date().toISOString()
+    });
+    alert("Course added successfully!");
+    courseInput.value = "";
+  } catch (err) {
+    alert("Error adding course: " + err.message);
+  }
+});
+
+// ==========================================
+// 6. EMPLOYEE WORKSPACE ACTIONS
+// ==========================================
+
+// Verify Student CPR
 document.getElementById('student-check-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const cpr = document.getElementById('check-cpr').value.trim();
   const phone = document.getElementById('check-phone').value.trim();
-
-  const querySnap = await getDocs(query(collection(db, "students"), where("cpr", "==", cpr)));
   const msgBox = document.getElementById('check-message');
-  msgBox.classList.remove('hidden');
 
-  if (!querySnap.empty) {
-    const existing = querySnap.docs[0].data();
-    msgBox.className = "pending-banner";
-    msgBox.innerText = `Student already added by: ${existing.addedByUsername}`;
-  } else {
-    msgBox.className = "pending-banner";
-    msgBox.innerText = "Student record available. Complete form below.";
-    
-    document.getElementById('student-entry-card')?.classList.remove('hidden');
-    document.getElementById('student-cpr').value = cpr;
-    document.getElementById('student-phone').value = phone;
+  try {
+    const qSnap = await getDocs(query(collection(db, "students"), where("cpr", "==", cpr)));
+    msgBox.classList.remove('hidden');
+
+    if (!qSnap.empty) {
+      const existing = qSnap.docs[0].data();
+      msgBox.className = "pending-banner";
+      msgBox.innerText = `Student already added by: ${existing.addedByUsername}`;
+    } else {
+      msgBox.className = "pending-banner";
+      msgBox.innerText = "Student record available. Complete form below.";
+      
+      document.getElementById('student-entry-card')?.classList.remove('hidden');
+      document.getElementById('student-cpr').value = cpr;
+      document.getElementById('student-phone').value = phone;
+    }
+  } catch (err) {
+    alert("Verification error: " + err.message);
   }
 });
 
-// --- Save Student (Employee) ---
+// Save Student Record
 document.getElementById('save-student-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
-  const cvFile = document.getElementById('student-cv').files[0];
-  let cvUrl = "";
 
-  if (cvFile) {
-    const storageRef = ref(storage, `cvs/${Date.now()}_${cvFile.name}`);
-    const uploadResult = await uploadBytes(storageRef, cvFile);
-    cvUrl = await getDownloadURL(uploadResult.ref);
+  try {
+    const cvFile = document.getElementById('student-cv').files[0];
+    let cvUrl = "";
+
+    if (cvFile) {
+      const storageRef = ref(storage, `cvs/${Date.now()}_${cvFile.name}`);
+      const uploadResult = await uploadBytes(storageRef, cvFile);
+      cvUrl = await getDownloadURL(uploadResult.ref);
+    }
+
+    const studentPayload = {
+      name: document.getElementById('student-name').value,
+      cpr: document.getElementById('student-cpr').value,
+      phone: document.getElementById('student-phone').value,
+      degree: document.getElementById('student-degree').value,
+      tamkeenStatus: document.getElementById('student-tamkeen').value,
+      comment: document.getElementById('student-comment').value,
+      cvUrl: cvUrl,
+      reminderDate: document.getElementById('student-date').value,
+      addedByUid: currentUser ? currentUser.uid : "unknown",
+      addedByUsername: currentUser ? currentUser.name : "Employee",
+      createdAt: new Date().toISOString()
+    };
+
+    await addDoc(collection(db, "students"), studentPayload);
+    alert("Student record saved successfully!");
+    document.getElementById('student-entry-card')?.classList.add('hidden');
+    e.target.reset();
+  } catch (err) {
+    alert("Error saving record: " + err.message);
   }
-
-  const studentData = {
-    name: document.getElementById('student-name').value,
-    cpr: document.getElementById('student-cpr').value,
-    phone: document.getElementById('student-phone').value,
-    degree: document.getElementById('student-degree').value,
-    tamkeenStatus: document.getElementById('student-tamkeen').value,
-    comment: document.getElementById('student-comment').value,
-    cvUrl: cvUrl,
-    reminderDate: document.getElementById('student-date').value,
-    addedByUid: currentUser.uid,
-    addedByUsername: currentUser.name,
-    createdAt: new Date().toISOString()
-  };
-
-  await addDoc(collection(db, "students"), studentData);
-  alert("Student record saved successfully!");
-  document.getElementById('student-entry-card')?.classList.add('hidden');
 });
 
-// --- Excel Export (SheetJS) ---
+// ==========================================
+// 7. EXCEL DIRECTORY EXPORT (SheetJS)
+// ==========================================
+
 document.getElementById('download-excel-btn')?.addEventListener('click', async () => {
-  const querySnap = await getDocs(collection(db, "students"));
-  const data = [];
-
-  querySnap.forEach(docSnap => {
-    const s = docSnap.data();
-    data.push({
-      "Full Name": s.name,
-      "CPR": s.cpr,
-      "Phone": s.phone,
-      "Degree": s.degree,
-      "Tamkeen Status": s.tamkeenStatus,
-      "Added By": s.addedByUsername,
-      "Comments": s.comment
-    });
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Student Directory");
-  XLSX.writeFile(workbook, "Student_Directory.xlsx");
-});
-
-// --- Email Reminder Check ---
-async function checkStudentMilestoneReminders() {
   try {
     const querySnap = await getDocs(collection(db, "students"));
-    const today = new Date();
+    const exportData = [];
 
-    querySnap.forEach(async (docSnap) => {
-      const student = docSnap.data();
-      if (!student.reminderDate) return;
-
-      const targetDate = new Date(student.reminderDate);
-      const elevenMonths = new Date(targetDate);
-      elevenMonths.setMonth(elevenMonths.getMonth() + 11);
-
-      const threeDaysBeforeYear = new Date(targetDate);
-      threeDaysBeforeYear.setFullYear(threeDaysBeforeYear.getFullYear() + 1);
-      threeDaysBeforeYear.setDate(threeDaysBeforeYear.getDate() - 3);
-
-      if (isSameDay(today, elevenMonths) || isSameDay(today, threeDaysBeforeYear)) {
-        const userSnap = await getDoc(doc(db, "users", student.addedByUid));
-        if (!userSnap.exists()) return;
-        
-        emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-          to_email: userSnap.data().email,
-          student_name: student.name,
-          message: `Milestone notification for ${student.name}`
-        });
-      }
+    querySnap.forEach(docSnap => {
+      const s = docSnap.data();
+      exportData.push({
+        "Full Name": s.name || "",
+        "CPR": s.cpr || "",
+        "Phone": s.phone || "",
+        "Degree": s.degree || "",
+        "Tamkeen Status": s.tamkeenStatus || "",
+        "Added By": s.addedByUsername || "",
+        "Comments": s.comment || ""
+      });
     });
-  } catch (err) {
-    console.error("Reminder check failed:", err);
-  }
-}
 
-function isSameDay(d1, d2) {
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
-}
+    if (exportData.length === 0) {
+      alert("No student records available to export.");
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, "Student_Directory.xlsx");
+  } catch (err) {
+    alert("Export failed: " + err.message);
+  }
+});

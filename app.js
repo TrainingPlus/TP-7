@@ -269,6 +269,7 @@ async function loadManagerData() {
     });
   }
 
+  // Load Staff List & Render Profile Pictures
   const staffList = document.getElementById('manager-staff-list');
   if (staffList) {
     onSnapshot(query(collection(db, "users"), where("status", "==", "approved")), (snapshot) => {
@@ -276,21 +277,39 @@ async function loadManagerData() {
       snapshot.forEach(docSnap => {
         const u = docSnap.data();
         const item = document.createElement('li');
-        item.innerText = `${u.name} (${u.role})`;
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '10px';
+        item.style.padding = '6px 0';
+
+        const avatar = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=0D8ABC&color=fff`;
+        item.innerHTML = `<img src="${avatar}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;"> <span>${u.name} (${u.role})</span>`;
+        
         staffList.appendChild(item);
       });
     });
   }
 }
 
+// Manager Add Course - DUPLICATE CHECK ADDED
 document.getElementById('manager-add-course-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('manager-course-name');
-  if (!input.value.trim()) return;
+  const courseName = input.value.trim();
+  if (!courseName) return;
 
   try {
+    // Check if course already exists
+    const courseQuery = query(collection(db, "courses"), where("name", "==", courseName));
+    const querySnap = await getDocs(courseQuery);
+
+    if (!querySnap.empty) {
+      alert("Course already exists!");
+      return;
+    }
+
     await addDoc(collection(db, "courses"), { 
-      name: input.value.trim(), 
+      name: courseName, 
       createdBy: (currentUser && currentUser.name) ? currentUser.name : (auth.currentUser?.displayName || "Manager"),
       createdAt: new Date().toISOString() 
     });
@@ -322,22 +341,32 @@ document.getElementById('manager-add-employee-form')?.addEventListener('submit',
 });
 
 // ==========================================
-// 5. OPERATOR WORKSPACE ACTIONS (FIXED UNDEFINED ERROR)
+// 5. OPERATOR WORKSPACE ACTIONS
 // ==========================================
 
+// Operator Add Course - DUPLICATE CHECK ADDED
 document.getElementById('operator-add-course-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const courseInput = document.getElementById('course-name-input');
-  if (!courseInput.value.trim()) return;
-
-  // Fallback chain so value is NEVER undefined
-  const creatorName = (currentUser && currentUser.name) 
-    ? currentUser.name 
-    : (auth.currentUser?.displayName || "Operator");
+  const courseName = courseInput.value.trim();
+  if (!courseName) return;
 
   try {
+    // Check if course already exists
+    const courseQuery = query(collection(db, "courses"), where("name", "==", courseName));
+    const querySnap = await getDocs(courseQuery);
+
+    if (!querySnap.empty) {
+      alert("Course already exists!");
+      return;
+    }
+
+    const creatorName = (currentUser && currentUser.name) 
+      ? currentUser.name 
+      : (auth.currentUser?.displayName || "Operator");
+
     await addDoc(collection(db, "courses"), {
-      name: courseInput.value.trim(),
+      name: courseName,
       createdBy: creatorName,
       createdAt: new Date().toISOString()
     });

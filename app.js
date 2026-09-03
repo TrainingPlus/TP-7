@@ -104,6 +104,9 @@ function initializeUserDashboard(userData) {
     loadManagerUserList();
   }
 
+  // Run automated email milestone check on login
+  checkStudentMilestoneReminders();
+
   setupChatSystem();
 }
 
@@ -168,6 +171,59 @@ document.getElementById('save-student-form')?.addEventListener('submit', async (
   document.getElementById('student-entry-card').classList.add('hidden');
   loadStudentDirectory();
 });
+
+// --- Automated EmailJS Milestone Check (100% Free) ---
+async function checkStudentMilestoneReminders() {
+  try {
+    const querySnap = await getDocs(collection(db, "students"));
+    const today = new Date();
+
+    querySnap.forEach(async (docSnap) => {
+      const student = docSnap.data();
+      if (!student.reminderDate) return;
+
+      const targetDate = new Date(student.reminderDate);
+      
+      // Calculate 11 months after target date
+      const elevenMonths = new Date(targetDate);
+      elevenMonths.setMonth(elevenMonths.getMonth() + 11);
+
+      // Calculate 3 days before 1 year
+      const threeDaysBeforeYear = new Date(targetDate);
+      threeDaysBeforeYear.setFullYear(threeDaysBeforeYear.getFullYear() + 1);
+      threeDaysBeforeYear.setDate(threeDaysBeforeYear.getDate() - 3);
+
+      const is11Months = isSameDay(today, elevenMonths);
+      const is3DaysBeforeYear = isSameDay(today, threeDaysBeforeYear);
+
+      if (is11Months || is3DaysBeforeYear) {
+        // Fetch original employee email who added the student
+        const userSnap = await getDoc(doc(db, "users", student.addedByUid));
+        if (!userSnap.exists()) return;
+        const employeeEmail = userSnap.data().email;
+
+        const messageText = is11Months 
+          ? `Student ${student.name} has 1 month remaining before completing a year.`
+          : `Student ${student.name} has 3 days remaining to complete the full year!`;
+
+        // Send Email via EmailJS API
+        emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+          to_email: employeeEmail,
+          student_name: student.name,
+          message: messageText
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Milestone Check Error:", error);
+  }
+}
+
+function isSameDay(d1, d2) {
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+}
 
 // --- Excel Export Engine (SheetJS Integration) ---
 document.getElementById('download-directory-excel-btn')?.addEventListener('click', async () => {

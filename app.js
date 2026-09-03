@@ -2,6 +2,7 @@ import {
   auth, googleProvider, db, storage, 
   signInWithPopup, signOut, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, ref, uploadBytes, getDownloadURL 
 } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Global Application State Variables
 let currentUser = null;
@@ -44,7 +45,7 @@ window.toggleChatWidget = () => {
 };
 
 // ==========================================
-// 2. INITIALIZATION & AUTHENTICATION
+// 2. INITIALIZATION & AUTHENTICATION OBSERVER
 // ==========================================
 
 function updateFooterClock() {
@@ -56,6 +57,35 @@ function updateFooterClock() {
   }
 }
 setInterval(updateFooterClock, 1000);
+
+// PERSIST AUTHENTICATION ON PAGE REFRESH
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        if (userData.status === "approved") {
+          currentUser = userData;
+          initializeDashboard(userData);
+        } else {
+          alert("Your account is pending manager approval.");
+          await signOut(auth);
+        }
+      }
+    } catch (err) {
+      console.error("Error restoring auth session:", err);
+    }
+  } else {
+    currentUser = null;
+    document.getElementById('auth-section')?.classList.remove('hidden');
+    document.getElementById('main-header')?.classList.add('hidden');
+    document.getElementById('toggle-chat-btn')?.classList.add('hidden');
+    document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+  }
+});
 
 document.getElementById('google-login-btn')?.addEventListener('click', async () => {
   try {
@@ -224,7 +254,6 @@ async function loadManagerData() {
         item.style.color = '#2563eb';
         item.style.fontWeight = '600';
 
-        // Click event to navigate directly to the course/classes workspace
         item.addEventListener('click', () => {
           document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
           document.getElementById('operator-view')?.classList.remove('hidden');
@@ -260,7 +289,11 @@ document.getElementById('manager-add-course-form')?.addEventListener('submit', a
   if (!input.value.trim()) return;
 
   try {
-    await addDoc(collection(db, "courses"), { name: input.value.trim(), createdAt: new Date().toISOString() });
+    await addDoc(collection(db, "courses"), { 
+      name: input.value.trim(), 
+      createdBy: (currentUser && currentUser.name) ? currentUser.name : (auth.currentUser?.displayName || "Manager"),
+      createdAt: new Date().toISOString() 
+    });
     alert("Course added successfully.");
     input.value = "";
   } catch (err) {
@@ -289,7 +322,7 @@ document.getElementById('manager-add-employee-form')?.addEventListener('submit',
 });
 
 // ==========================================
-// 5. OPERATOR WORKSPACE ACTIONS
+// 5. OPERATOR WORKSPACE ACTIONS (FIXED UNDEFINED ERROR)
 // ==========================================
 
 document.getElementById('operator-add-course-form')?.addEventListener('submit', async (e) => {
@@ -297,10 +330,15 @@ document.getElementById('operator-add-course-form')?.addEventListener('submit', 
   const courseInput = document.getElementById('course-name-input');
   if (!courseInput.value.trim()) return;
 
+  // Fallback chain so value is NEVER undefined
+  const creatorName = (currentUser && currentUser.name) 
+    ? currentUser.name 
+    : (auth.currentUser?.displayName || "Operator");
+
   try {
     await addDoc(collection(db, "courses"), {
       name: courseInput.value.trim(),
-      createdBy: currentUser ? currentUser.name : "Operator",
+      createdBy: creatorName,
       createdAt: new Date().toISOString()
     });
     alert("Course added successfully!");
@@ -314,7 +352,6 @@ document.getElementById('operator-add-course-form')?.addEventListener('submit', 
 // 6. EMPLOYEE WORKSPACE ACTIONS & DYNAMIC CHECK
 // ==========================================
 
-// Switch input type dynamically based on CPR or Phone selection
 document.getElementById('check-type')?.addEventListener('change', (e) => {
   const checkInput = document.getElementById('check-value');
   if (e.target.value === 'cpr') {
@@ -326,7 +363,6 @@ document.getElementById('check-type')?.addEventListener('change', (e) => {
   }
 });
 
-// Verify Student Search (CPR or Phone)
 document.getElementById('student-check-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const searchType = document.getElementById('check-type').value;
@@ -340,7 +376,7 @@ document.getElementById('student-check-form')?.addEventListener('submit', async 
     if (!qSnap.empty) {
       const existing = qSnap.docs[0].data();
       msgBox.className = "pending-banner";
-      msgBox.innerText = `Student record already exists! Added by: ${existing.addedByUsername}`;
+      msgBox.innerText = `Student record already exists! Added by: ${existing.addedByUsername || 'Employee'}`;
     } else {
       msgBox.className = "pending-banner";
       msgBox.innerText = "No existing record found. Proceeding with new entry...";
@@ -360,7 +396,6 @@ document.getElementById('student-check-form')?.addEventListener('submit', async 
   }
 });
 
-// Save Student Record
 document.getElementById('save-student-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -383,8 +418,8 @@ document.getElementById('save-student-form')?.addEventListener('submit', async (
       comment: document.getElementById('student-comment').value,
       cvUrl: cvUrl,
       reminderDate: document.getElementById('student-date').value,
-      addedByUid: currentUser ? currentUser.uid : "unknown",
-      addedByUsername: currentUser ? currentUser.name : "Employee",
+      addedByUid: (currentUser && currentUser.uid) ? currentUser.uid : (auth.currentUser?.uid || "unknown"),
+      addedByUsername: (currentUser && currentUser.name) ? currentUser.name : (auth.currentUser?.displayName || "Employee"),
       createdAt: new Date().toISOString()
     };
 

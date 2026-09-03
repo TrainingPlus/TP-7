@@ -1,216 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Corporate Management System</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Training Plus Institute - Corporate Management System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- EmailJS Library -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <!-- SheetJS for Excel Exports -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <!-- App Header -->
-  <header class="app-header">
-    <div class="logo-area">
-      <h2 id="app-title">Management Portal</h2>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="search-container">
-      <input type="text" id="global-search" placeholder="Search by Name, CPR, or Phone...">
-      <div id="search-results" class="search-dropdown hidden"></div>
-    </div>
-
-    <!-- Actions & Profile Navigation -->
-    <div class="header-actions">
-      <button id="lang-toggle-btn" onclick="toggleLanguage()">العربية</button>
-      
-      <!-- Role-Based Header Buttons -->
-      <button id="nav-directory-btn" class="nav-btn hidden">Student Directory</button>
-      <button id="nav-courses-btn" class="nav-btn hidden">Courses</button>
-      <button id="nav-employees-btn" class="nav-btn hidden">Employees</button>
-      <button id="download-directory-excel-btn" class="btn-secondary hidden">Download Directory Excel</button>
-
-      <!-- User Account Dropdown -->
-      <div class="account-menu">
-        <button id="account-btn" class="account-btn">Account</button>
-        <div id="account-dropdown" class="account-dropdown hidden">
-          <p><strong>Name:</strong> <span id="user-display-name">-</span></p>
-          <p><strong>Email:</strong> <span id="user-display-email">-</span></p>
-          <p><strong>Role:</strong> <span id="user-display-role">-</span></p>
-          <button id="logout-btn" class="btn-danger">Log Out</button>
-        </div>
+  <!-- Top Slate Header (Visible After Login) -->
+  <header id="main-header" class="app-header hidden">
+    <div class="header-left">
+      <h2 class="brand-title">Training Plus Institute</h2>
+      <div class="header-search">
+        <input type="text" id="global-search" placeholder="Search by name or CPR..." />
       </div>
+    </div>
+
+    <div class="header-right-nav">
+      <!-- Dynamic Nav Pill Buttons -->
+      <button id="nav-manager-btn" class="nav-pill hidden">Manager Console</button>
+      <button id="nav-courses-btn" class="nav-pill hidden">Courses</button>
+      <button id="nav-directory-btn" class="nav-pill hidden">Student Directory</button>
+      <button id="download-excel-btn" class="nav-pill hidden">Download All (Excel)</button>
+      <button id="lang-toggle-btn" class="nav-pill" onclick="toggleLanguage()">AR / EN</button>
+      <button id="logout-btn" class="nav-pill btn-logout">Logout</button>
     </div>
   </header>
 
-  <!-- Login Section -->
+  <!-- 1. SIGN-IN SECTION -->
   <main id="auth-section" class="main-container">
-    <div class="login-card">
-      <h2>Welcome Back</h2>
-      <p>Sign in with your Google Workspace Account to access the system.</p>
-      <button id="google-login-btn" class="btn-primary">Sign In with Google</button>
+    <div class="sign-in-card">
+      <h2 class="welcome-title">Welcome</h2>
+      <p class="welcome-subtitle">Select your role to sign in to the Student Directory</p>
+
+      <div class="role-tabs">
+        <button type="button" class="role-tab" data-role="manager" onclick="selectRole('manager')">Manager</button>
+        <button type="button" class="role-tab" data-role="operator" onclick="selectRole('operator')">Operator</button>
+        <button type="button" class="role-tab active" data-role="employee" onclick="selectRole('employee')">Employee</button>
+      </div>
+
+      <div class="role-signin-box">
+        <h3 id="selected-role-heading">Employee Sign In</h3>
+        <button id="google-login-btn" class="btn-google-white">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Sign in with Google
+        </button>
+      </div>
     </div>
   </main>
 
-  <!-- Main View Containers (Dynamically Toggled) -->
-  <main id="dashboard-section" class="main-container hidden">
-    
-    <!-- Employee View: Student Check & Directory -->
-    <section id="employee-view" class="role-view hidden">
-      <div class="card">
-        <h3 data-key="addStudent">Add Student Check</h3>
-        <form id="student-check-form">
-          <input type="text" id="check-cpr" placeholder="Enter CPR (9 Digits)">
-          <input type="text" id="check-phone" placeholder="Enter Phone Number">
-          <button type="submit" class="btn-primary">Check Availability</button>
-        </form>
-        <div id="check-message" class="message-banner hidden"></div>
+  <!-- 2. MANAGER WORKSPACE -->
+  <section id="manager-view" class="role-view main-container hidden">
+    <div id="manager-pending-alert" class="pending-banner hidden">
+      <div class="pending-info">
+        <strong>Pending Registration Request</strong>
+        <p>Employee <span id="pending-user-name">User</span> has requested system access.</p>
       </div>
-
-      <!-- Student Directory Form (Shown after check) -->
-      <div id="student-entry-card" class="card hidden">
-        <h3 data-key="studentDetails">Student Information Entry</h3>
-        <form id="save-student-form">
-          <input type="text" id="student-name" placeholder="Full Name" required>
-          <input type="text" id="student-cpr" placeholder="CPR Number" required readonly>
-          <input type="text" id="student-phone" placeholder="Phone Number" required readonly>
-          <input type="text" id="student-degree" placeholder="Degree / Qualification" required>
-          
-          <label for="student-tamkeen">Tamkeen Status:</label>
-          <select id="student-tamkeen">
-            <option value="Accepted">Accepted</option>
-            <option value="Under Processing">Under Processing</option>
-            <option value="Withdrawn">Withdrawn</option>
-          </select>
-
-          <textarea id="student-comment" placeholder="Comments..."></textarea>
-          
-          <label>Upload Student CV (PDF/Word):</label>
-          <input type="file" id="student-cv" accept=".pdf,.doc,.docx">
-
-          <label for="student-date">Reminder Target Date:</label>
-          <input type="date" id="student-date" required>
-
-          <button type="submit" class="btn-success">Save Student Data</button>
-        </form>
+      <div class="pending-actions">
+        <button id="approve-user-btn" class="btn-approve">Accept</button>
+        <button id="reject-user-btn" class="btn-reject">Reject</button>
       </div>
+    </div>
 
-      <!-- Student Directory Table -->
-      <div class="card">
-        <h3>Student Directory</h3>
-        <div class="table-responsive">
-          <table id="directory-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>CPR</th>
-                <th>Phone</th>
-                <th>Tamkeen Status</th>
-                <th>Assign to Class</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="directory-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Operator View: Courses & Classes -->
-    <section id="operator-view" class="role-view hidden">
-      <div class="card">
+    <h2 class="section-title">Quick Management Actions</h2>
+    <div class="manager-grid">
+      <div class="card manager-card">
         <h3>Add New Course</h3>
-        <form id="add-course-form">
-          <input type="text" id="course-title" placeholder="Course Name" required>
-          <button type="submit" class="btn-primary">Create Course</button>
+        <form id="manager-add-course-form">
+          <input type="text" id="manager-course-name" placeholder="Course Name" required>
+          <button type="submit" class="btn-brand-full">+ Add Course</button>
         </form>
-      </div>
-
-      <div id="operator-courses-container" class="card">
-        <h3>Active Courses</h3>
-        <div id="courses-list" class="grid-list"></div>
-      </div>
-
-      <!-- Class Management View -->
-      <div id="class-management-card" class="card hidden">
-        <div class="card-header-flex">
-          <h3 id="selected-class-title">Class Roster</h3>
-          <button id="download-class-excel-btn" class="btn-secondary">Export Class Excel</button>
-        </div>
-        <div class="table-responsive">
-          <table id="class-students-table">
-            <thead>
-              <tr>
-                <th>Student Name</th>
-                <th>CPR</th>
-                <th>Tamkeen Status</th>
-                <th>Submitted By Employee</th>
-                <th>Comment</th>
-              </tr>
-            </thead>
-            <tbody id="class-students-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Manager View: Staff & System Administration -->
-    <section id="manager-view" class="role-view hidden">
-      <div class="card">
-        <h3>System User Management</h3>
-        <div class="table-responsive">
-          <table id="users-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="users-table-body"></tbody>
-          </table>
+        <div class="sub-list-container">
+          <h4>Existing Courses</h4>
+          <ul id="manager-courses-list" class="action-list"></ul>
         </div>
       </div>
 
-      <!-- Manager View-Only Courses -->
-      <div class="card">
-        <h3>View Courses & Enrolled Students</h3>
-        <div id="manager-courses-list" class="grid-list"></div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Live Chat Widget (Floating Bottom-Right) -->
-  <div id="chat-widget" class="chat-widget collapsed">
-    <div id="chat-header" class="chat-header">
-      <span>Internal Live Chat</span>
-      <button id="toggle-chat-btn">-</button>
-    </div>
-    <div id="chat-body" class="chat-body hidden">
-      <div class="chat-sidebar">
-        <h4>Users & Groups</h4>
-        <ul id="chat-users-list"></ul>
-      </div>
-      <div class="chat-main">
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-input-area">
-          <input type="text" id="chat-input-text" placeholder="Type a message or drag student profile...">
-          <input type="file" id="chat-file-input" class="hidden">
-          <button id="chat-attach-btn">📎</button>
-          <button id="chat-send-btn">Send</button>
+      <div class="card manager-card">
+        <h3>Add New Employee</h3>
+        <form id="manager-add-employee-form">
+          <input type="text" id="manager-employee-name" placeholder="Employee Full Name" required>
+          <input type="email" id="manager-employee-email" placeholder="Employee Email" required>
+          <button type="submit" class="btn-brand-full">+ Add Employee</button>
+        </form>
+        <div class="sub-list-container">
+          <h4>Current Active Staff</h4>
+          <ul id="manager-staff-list" class="action-list"></ul>
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- 3. OPERATOR WORKSPACE -->
+  <section id="operator-view" class="role-view main-container hidden">
+    <div class="card operator-card">
+      <h2 class="card-title">Add New Course</h2>
+      <form id="operator-add-course-form">
+        <div class="form-group">
+          <label for="course-name-input">Course Name</label>
+          <input type="text" id="course-name-input" placeholder="e.g., Web Development" required />
+        </div>
+        <button type="submit" class="btn-mint">Add Course</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 4. EMPLOYEE WORKSPACE -->
+  <section id="employee-view" class="role-view main-container hidden">
+    <div class="card">
+      <h3>Add Student Check</h3>
+      <form id="student-check-form">
+        <input type="text" id="check-cpr" placeholder="Enter 9-Digit CPR" pattern="[0-8][0-9]{8}" required>
+        <input type="tel" id="check-phone" placeholder="Phone Number" required>
+        <button type="submit" class="btn-primary">Verify & Proceed</button>
+      </form>
+      <div id="check-message" class="hidden"></div>
+    </div>
+
+    <div id="student-entry-card" class="card hidden">
+      <h3>Student Information Entry</h3>
+      <form id="save-student-form">
+        <input type="text" id="student-name" placeholder="Full Name" required>
+        <input type="text" id="student-cpr" readonly>
+        <input type="tel" id="student-phone" readonly>
+        <input type="text" id="student-degree" placeholder="Degree / Qualification">
+        <select id="student-tamkeen">
+          <option value="Not Applied">Tamkeen: Not Applied</option>
+          <option value="Approved">Tamkeen: Approved</option>
+          <option value="Pending">Tamkeen: Pending</option>
+        </select>
+        <textarea id="student-comment" placeholder="Comments"></textarea>
+        <input type="file" id="student-cv" accept=".pdf,.doc,.docx">
+        <input type="date" id="student-date" required>
+        <button type="submit" class="btn-success">Save Student Record</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FLOATING LIVE CHAT WIDGET -->
+  <div id="chat-widget" class="chat-sidebar-widget hidden">
+    <div class="chat-sidebar-header">
+      <span class="header-title">SYSTEM USERS</span>
+      <button id="new-group-btn" class="btn-new-group">+ New Group</button>
+    </div>
+    <div id="chat-user-list" class="user-list-container"></div>
   </div>
 
-  <!-- System Footer -->
+  <button id="toggle-chat-btn" class="floating-chat-toggle hidden" onclick="toggleChatWidget()">
+    <span class="toggle-arrow">❯</span>
+  </button>
+
   <footer class="app-footer">
-    <span id="footer-datetime">Loading Date & Time...</span>
+    <span id="footer-datetime"></span>
   </footer>
 
   <script type="module" src="app.js"></script>

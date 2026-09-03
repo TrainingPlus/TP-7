@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Training Plus Institute - Corporate Management System</title>
-  <link rel="stylesheet" href="styles.css" />
+  <!-- Force cache refresh with ?v=3 -->
+  <link rel="stylesheet" href="styles.css?v=3" />
   <!-- EmailJS Library -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <!-- SheetJS for Excel Exports -->
@@ -67,8 +68,8 @@
         <p>Employee <span id="pending-user-name">User</span> has requested system access.</p>
       </div>
       <div class="pending-actions">
-        <button id="approve-user-btn" class="btn-approve">Accept</button>
-        <button id="reject-user-btn" class="btn-reject">Reject</button>
+        <button id="approve-user-btn" class="btn-success">Accept</button>
+        <button id="reject-user-btn" class="btn-logout">Reject</button>
       </div>
     </div>
 
@@ -78,10 +79,10 @@
         <h3>Add New Course</h3>
         <form id="manager-add-course-form">
           <input type="text" id="manager-course-name" placeholder="Course Name" required>
-          <button type="submit" class="btn-brand-full">+ Add Course</button>
+          <button type="submit" class="btn-primary">+ Add Course</button>
         </form>
         <div class="sub-list-container">
-          <h4>Existing Courses</h4>
+          <h4>Existing Courses (Click to Manage)</h4>
           <ul id="manager-courses-list" class="action-list"></ul>
         </div>
       </div>
@@ -91,7 +92,7 @@
         <form id="manager-add-employee-form">
           <input type="text" id="manager-employee-name" placeholder="Employee Full Name" required>
           <input type="email" id="manager-employee-email" placeholder="Employee Email" required>
-          <button type="submit" class="btn-brand-full">+ Add Employee</button>
+          <button type="submit" class="btn-primary">+ Add Employee</button>
         </form>
         <div class="sub-list-container">
           <h4>Current Active Staff</h4>
@@ -101,16 +102,17 @@
     </div>
   </section>
 
-  <!-- 3. OPERATOR WORKSPACE -->
+  <!-- 3. OPERATOR / COURSES WORKSPACE -->
   <section id="operator-view" class="role-view main-container hidden">
+    <h2 id="selected-course-title" class="section-title">Manage Course Classes</h2>
     <div class="card operator-card">
-      <h2 class="card-title">Add New Course</h2>
+      <h3 class="card-title">Add New Course / Class</h3>
       <form id="operator-add-course-form">
         <div class="form-group">
           <label for="course-name-input">Course Name</label>
           <input type="text" id="course-name-input" placeholder="e.g., Web Development" required />
         </div>
-        <button type="submit" class="btn-mint">Add Course</button>
+        <button type="submit" class="btn-mint">+ Add Course</button>
       </form>
     </div>
   </section>
@@ -130,7 +132,7 @@
       <div id="check-message" class="hidden"></div>
     </div>
 
-    <div id="student-entry-card" class="card hidden">
+    <div id="student-entry-card" class="card hidden" style="margin-top: 20px;">
       <h3>Student Information Entry</h3>
       <form id="save-student-form">
         <input type="text" id="student-name" placeholder="Full Name" required>

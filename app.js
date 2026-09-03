@@ -215,8 +215,26 @@ async function loadManagerData() {
     onSnapshot(collection(db, "courses"), (snapshot) => {
       coursesList.innerHTML = "";
       snapshot.forEach(docSnap => {
+        const courseData = docSnap.data();
+
         const item = document.createElement('li');
-        item.innerText = docSnap.data().name;
+        item.innerText = courseData.name;
+        item.className = 'course-item-link';
+        item.style.cursor = 'pointer';
+        item.style.color = '#2563eb';
+        item.style.fontWeight = '600';
+
+        // Click event to navigate directly to the course/classes workspace
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+          document.getElementById('operator-view')?.classList.remove('hidden');
+
+          const heading = document.getElementById('selected-course-title');
+          if (heading) {
+            heading.innerText = `Managing Classes for: ${courseData.name}`;
+          }
+        });
+
         coursesList.appendChild(item);
       });
     });

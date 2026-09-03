@@ -12,7 +12,7 @@
 </head>
 <body>
 
-  <!-- Top Slate Header (Visible After Login) -->
+  <!-- Top Header (Visible After Login) -->
   <header id="main-header" class="app-header hidden">
     <div class="header-left">
       <h2 class="brand-title">Training Plus Institute</h2>
@@ -120,8 +120,11 @@
     <div class="card">
       <h3>Add Student Check</h3>
       <form id="student-check-form">
-        <input type="text" id="check-cpr" placeholder="Enter 9-Digit CPR" pattern="[0-8][0-9]{8}" required>
-        <input type="tel" id="check-phone" placeholder="Phone Number" required>
+        <select id="check-type" class="nav-pill" style="margin-right: 8px;">
+          <option value="cpr">CPR Number</option>
+          <option value="phone">Phone Number</option>
+        </select>
+        <input type="text" id="check-value" placeholder="Enter 9-Digit CPR" pattern="[0-8][0-9]{8}" required>
         <button type="submit" class="btn-primary">Verify & Proceed</button>
       </form>
       <div id="check-message" class="hidden"></div>
@@ -131,8 +134,8 @@
       <h3>Student Information Entry</h3>
       <form id="save-student-form">
         <input type="text" id="student-name" placeholder="Full Name" required>
-        <input type="text" id="student-cpr" readonly>
-        <input type="tel" id="student-phone" readonly>
+        <input type="text" id="student-cpr" placeholder="CPR Number">
+        <input type="tel" id="student-phone" placeholder="Phone Number">
         <input type="text" id="student-degree" placeholder="Degree / Qualification">
         <select id="student-tamkeen">
           <option value="Not Applied">Tamkeen: Not Applied</option>

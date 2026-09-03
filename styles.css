@@ -1,5 +1,5 @@
 /* ==========================================
-   1. GLOBAL REETS & TYPOGRAPHY
+   1. GLOBAL RESETS & TYPOGRAPHY
    ========================================== */
 * {
   box-sizing: border-box;
@@ -9,15 +9,14 @@
 }
 
 body {
-  background-color: #f8fafc; /* Crisp Light Gray Background */
-  color: #1e293b;            /* High-Contrast Slate Text */
+  background-color: #f8fafc;
+  color: #1e293b;
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Structural Layout Helpers */
 .main-container {
   max-width: 1140px;
   width: 90%;
@@ -110,84 +109,7 @@ body {
 }
 
 /* ==========================================
-   3. SIGN-IN CONTAINER & TAB CONTROLS
-   ========================================== */
-.sign-in-card {
-  max-width: 440px;
-  margin: 60px auto;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 36px 32px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-  text-align: center;
-}
-
-.welcome-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 6px;
-}
-
-.welcome-subtitle {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 24px;
-}
-
-.role-tabs {
-  display: flex;
-  background-color: #f1f5f9;
-  padding: 4px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-}
-
-.role-tab {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.role-tab.active {
-  background-color: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.btn-google-white {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #1e293b;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 12px;
-}
-
-.btn-google-white:hover {
-  background-color: #f8fafc;
-  border-color: #94a3b8;
-}
-
-/* ==========================================
-   4. CARDS, FORMS & LAYOUT GRIDS
+   3. CARDS, FORMS & LAYOUT GRIDS
    ========================================== */
 .section-title {
   font-size: 1.25rem;
@@ -245,8 +167,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-/* Professional Buttons */
-.btn-primary, .btn-mint, .btn-success, .btn-brand-full {
+.btn-primary, .btn-mint, .btn-success {
   width: 100%;
   border-radius: 6px;
   padding: 10px 16px;
@@ -257,8 +178,8 @@ input:focus, select:focus, textarea:focus {
   transition: background-color 0.2s ease;
 }
 
-.btn-primary, .btn-brand-full { background-color: #2563eb; color: #ffffff; }
-.btn-primary:hover, .btn-brand-full:hover { background-color: #1d4ed8; }
+.btn-primary { background-color: #2563eb; color: #ffffff; }
+.btn-primary:hover { background-color: #1d4ed8; }
 
 .btn-mint { background-color: #0d9488; color: #ffffff; }
 .btn-mint:hover { background-color: #0f766e; }
@@ -266,7 +187,7 @@ input:focus, select:focus, textarea:focus {
 .btn-success { background-color: #16a34a; color: #ffffff; }
 .btn-success:hover { background-color: #15803d; }
 
-/* Sub-lists under Manager View */
+/* Sub-lists & Clickable Courses */
 .sub-list-container {
   margin-top: 20px;
   padding-top: 16px;
@@ -287,7 +208,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .action-list li {
-  padding: 8px 12px;
+  padding: 10px 14px;
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -296,23 +217,20 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 6px;
 }
 
-/* Notification Banners */
-.pending-banner {
-  background-color: #fffbe0;
-  border: 1px solid #fef08a;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #713f12;
-  font-size: 0.875rem;
+.course-item-link {
+  color: #2563eb !important;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* ==========================================
-   5. FOOTER
-   ========================================== */
+.course-item-link:hover {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  text-decoration: underline;
+}
+
+/* FOOTER */
 .app-footer {
   text-align: center;
   padding: 20px;

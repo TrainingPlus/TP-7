@@ -1,6 +1,6 @@
 import { 
   auth, googleProvider, db, storage, 
-  signInWithPopup, signOut, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, ref, uploadBytes, getDownloadURL 
+  signInWithPopup, signOut, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, ref, uploadBytes, getDownloadURL 
 } from './firebase-config.js';
 
 // Global Application State Variables
@@ -12,7 +12,6 @@ let activeLanguage = 'en';
 // 1. GLOBAL WINDOW FUNCTIONS (HTML Handlers)
 // ==========================================
 
-// Role selection tabs on login screen
 window.selectRole = (role) => {
   selectedRole = role;
   document.querySelectorAll('.role-tab').forEach(tab => {
@@ -30,7 +29,6 @@ window.selectRole = (role) => {
   }
 };
 
-// Language toggle button (AR / EN)
 window.toggleLanguage = () => {
   activeLanguage = activeLanguage === 'en' ? 'ar' : 'en';
   const btn = document.getElementById('lang-toggle-btn');
@@ -38,7 +36,6 @@ window.toggleLanguage = () => {
   document.documentElement.dir = activeLanguage === 'ar' ? 'rtl' : 'ltr';
 };
 
-// Floating chat panel toggle
 window.toggleChatWidget = () => {
   const chatWidget = document.getElementById('chat-widget');
   if (chatWidget) {
@@ -50,7 +47,6 @@ window.toggleChatWidget = () => {
 // 2. INITIALIZATION & AUTHENTICATION
 // ==========================================
 
-// Real-time Footer Clock update
 function updateFooterClock() {
   const clockElem = document.getElementById('footer-datetime');
   if (clockElem) {
@@ -61,7 +57,6 @@ function updateFooterClock() {
 }
 setInterval(updateFooterClock, 1000);
 
-// Google Sign-In Logic
 document.getElementById('google-login-btn')?.addEventListener('click', async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -71,7 +66,6 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Auto-approve Manager logins, keep Employee/Operator pending approval
       const initialStatus = selectedRole === 'manager' ? 'approved' : 'pending';
 
       const newUserPayload = {
@@ -95,7 +89,6 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
     } else {
       let userData = userSnap.data();
 
-      // Ensure Manager role updates correctly on sign-in
       if (selectedRole === 'manager') {
         await updateDoc(userRef, { role: 'manager', status: 'approved' });
         userData.role = 'manager';
@@ -116,7 +109,6 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
   }
 });
 
-// Logout Handler
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
   try {
     await signOut(auth);
@@ -127,28 +119,23 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
 });
 
 // ==========================================
-// 3. DASHBOARD ROUTING
+// 3. DASHBOARD ROUTING & HEADER NAVIGATION
 // ==========================================
 
 function initializeDashboard(userData) {
-  // Reveal Top Header & Controls
   document.getElementById('auth-section')?.classList.add('hidden');
   document.getElementById('main-header')?.classList.remove('hidden');
   document.getElementById('toggle-chat-btn')?.classList.remove('hidden');
 
-  // Hide All Workspace Views
   document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
 
-  // Get Nav Buttons
   const navManager = document.getElementById('nav-manager-btn');
   const navCourses = document.getElementById('nav-courses-btn');
   const navDirectory = document.getElementById('nav-directory-btn');
   const navExcel = document.getElementById('download-excel-btn');
 
-  // Hide Nav Pills initially
   [navManager, navCourses, navDirectory, navExcel].forEach(btn => btn?.classList.add('hidden'));
 
-  // Render view based on assigned user role
   if (userData.role === 'employee') {
     document.getElementById('employee-view')?.classList.remove('hidden');
     navDirectory?.classList.remove('hidden');
@@ -167,6 +154,22 @@ function initializeDashboard(userData) {
   }
 }
 
+// Header Navigation Click Handlers
+document.getElementById('nav-manager-btn')?.addEventListener('click', () => {
+  document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+  document.getElementById('manager-view')?.classList.remove('hidden');
+});
+
+document.getElementById('nav-courses-btn')?.addEventListener('click', () => {
+  document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+  document.getElementById('operator-view')?.classList.remove('hidden');
+});
+
+document.getElementById('nav-directory-btn')?.addEventListener('click', () => {
+  document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+  document.getElementById('employee-view')?.classList.remove('hidden');
+});
+
 // ==========================================
 // 4. MANAGER WORKSPACE ACTIONS
 // ==========================================
@@ -183,7 +186,6 @@ function listenForPendingUsers() {
       if (pendingName) pendingName.innerText = docData.name;
       pendingAlert?.classList.remove('hidden');
 
-      // Approve User Button
       const approveBtn = document.getElementById('approve-user-btn');
       if (approveBtn) {
         approveBtn.onclick = async () => {
@@ -193,7 +195,6 @@ function listenForPendingUsers() {
         };
       }
 
-      // Reject User Button
       const rejectBtn = document.getElementById('reject-user-btn');
       if (rejectBtn) {
         rejectBtn.onclick = async () => {
@@ -209,7 +210,6 @@ function listenForPendingUsers() {
 }
 
 async function loadManagerData() {
-  // Load Courses
   const coursesList = document.getElementById('manager-courses-list');
   if (coursesList) {
     onSnapshot(collection(db, "courses"), (snapshot) => {
@@ -222,7 +222,6 @@ async function loadManagerData() {
     });
   }
 
-  // Load Staff
   const staffList = document.getElementById('manager-staff-list');
   if (staffList) {
     onSnapshot(query(collection(db, "users"), where("status", "==", "approved")), (snapshot) => {
@@ -237,7 +236,6 @@ async function loadManagerData() {
   }
 }
 
-// Add Course (Manager Form)
 document.getElementById('manager-add-course-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('manager-course-name');
@@ -252,7 +250,6 @@ document.getElementById('manager-add-course-form')?.addEventListener('submit', a
   }
 });
 
-// Add Employee (Manager Form)
 document.getElementById('manager-add-employee-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = document.getElementById('manager-employee-name').value;
@@ -296,31 +293,49 @@ document.getElementById('operator-add-course-form')?.addEventListener('submit', 
 });
 
 // ==========================================
-// 6. EMPLOYEE WORKSPACE ACTIONS
+// 6. EMPLOYEE WORKSPACE ACTIONS & DYNAMIC CHECK
 // ==========================================
 
-// Verify Student CPR
+// Switch input type dynamically based on CPR or Phone selection
+document.getElementById('check-type')?.addEventListener('change', (e) => {
+  const checkInput = document.getElementById('check-value');
+  if (e.target.value === 'cpr') {
+    checkInput.placeholder = "Enter 9-Digit CPR";
+    checkInput.pattern = "[0-8][0-9]{8}";
+  } else {
+    checkInput.placeholder = "Enter Phone Number";
+    checkInput.removeAttribute('pattern');
+  }
+});
+
+// Verify Student Search (CPR or Phone)
 document.getElementById('student-check-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const cpr = document.getElementById('check-cpr').value.trim();
-  const phone = document.getElementById('check-phone').value.trim();
+  const searchType = document.getElementById('check-type').value;
+  const searchValue = document.getElementById('check-value').value.trim();
   const msgBox = document.getElementById('check-message');
 
   try {
-    const qSnap = await getDocs(query(collection(db, "students"), where("cpr", "==", cpr)));
+    const qSnap = await getDocs(query(collection(db, "students"), where(searchType, "==", searchValue)));
     msgBox.classList.remove('hidden');
 
     if (!qSnap.empty) {
       const existing = qSnap.docs[0].data();
       msgBox.className = "pending-banner";
-      msgBox.innerText = `Student already added by: ${existing.addedByUsername}`;
+      msgBox.innerText = `Student record already exists! Added by: ${existing.addedByUsername}`;
     } else {
       msgBox.className = "pending-banner";
-      msgBox.innerText = "Student record available. Complete form below.";
+      msgBox.innerText = "No existing record found. Proceeding with new entry...";
       
       document.getElementById('student-entry-card')?.classList.remove('hidden');
-      document.getElementById('student-cpr').value = cpr;
-      document.getElementById('student-phone').value = phone;
+      
+      if (searchType === 'cpr') {
+        document.getElementById('student-cpr').value = searchValue;
+        document.getElementById('student-phone').value = "";
+      } else {
+        document.getElementById('student-phone').value = searchValue;
+        document.getElementById('student-cpr').value = "";
+      }
     }
   } catch (err) {
     alert("Verification error: " + err.message);

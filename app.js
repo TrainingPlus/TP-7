@@ -58,18 +58,45 @@ document.getElementById('google-login-btn')?.addEventListener('click', async () 
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
+      // Auto-approve if the selected role is Manager, otherwise set to pending
+      const initialStatus = selectedRole === 'manager' ? 'approved' : 'pending';
+
       await setDoc(userRef, {
         uid: user.uid,
         name: user.displayName,
         email: user.email,
         role: selectedRole,
-        status: "pending",
+        status: initialStatus,
         createdAt: new Date().toISOString()
       });
-      alert(`Account submitted as ${selectedRole}. Manager approval required.`);
-      await signOut(auth);
+
+      if (initialStatus === 'pending') {
+        alert(`Account submitted as ${selectedRole}. Manager approval required.`);
+        await signOut(auth);
+      } else {
+        const newUserData = {
+          uid: user.uid,
+          name: user.displayName,
+          email: user.email,
+          role: selectedRole,
+          status: 'approved'
+        };
+        currentUser = newUserData;
+        initializeDashboard(newUserData);
+      }
     } else {
-      const userData = userSnap.data();
+      let userData = userSnap.data();
+
+      // If logging in as manager, ensure status is approved and role is manager
+      if (selectedRole === 'manager') {
+        await updateDoc(userRef, {
+          role: 'manager',
+          status: 'approved'
+        });
+        userData.role = 'manager';
+        userData.status = 'approved';
+      }
+
       if (userData.status !== "approved") {
         alert("Your account is pending manager approval.");
         await signOut(auth);

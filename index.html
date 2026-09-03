@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corporate Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- SheetJS for Excel Exports -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="logo-area">
+      <h2 id="app-title">Management Portal</h2>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+      <input type="text" id="global-search" placeholder="Search by Name, CPR, or Phone...">
+      <div id="search-results" class="search-dropdown hidden"></div>
+    </div>
+
+    <!-- Actions & Profile Navigation -->
+    <div class="header-actions">
+      <button id="lang-toggle-btn" onclick="toggleLanguage()">العربية</button>
+      
+      <!-- Role-Based Header Buttons -->
+      <button id="nav-directory-btn" class="nav-btn hidden">Student Directory</button>
+      <button id="nav-courses-btn" class="nav-btn hidden">Courses</button>
+      <button id="nav-employees-btn" class="nav-btn hidden">Employees</button>
+      <button id="download-directory-excel-btn" class="btn-secondary hidden">Download Directory Excel</button>
+
+      <!-- User Account Dropdown -->
+      <div class="account-menu">
+        <button id="account-btn" class="account-btn">Account</button>
+        <div id="account-dropdown" class="account-dropdown hidden">
+          <p><strong>Name:</strong> <span id="user-display-name">-</span></p>
+          <p><strong>Email:</strong> <span id="user-display-email">-</span></p>
+          <p><strong>Role:</strong> <span id="user-display-role">-</span></p>
+          <button id="logout-btn" class="btn-danger">Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Section -->
+  <main id="auth-section" class="main-container">
+    <div class="login-card">
+      <h2>Welcome Back</h2>
+      <p>Sign in with your Google Workspace Account to access the system.</p>
+      <button id="google-login-btn" class="btn-primary">Sign In with Google</button>
+    </div>
+  </main>
+
+  <!-- Main View Containers (Dynamically Toggled) -->
+  <main id="dashboard-section" class="main-container hidden">
+    
+    <!-- Employee View: Student Check & Directory -->
+    <section id="employee-view" class="role-view hidden">
+      <div class="card">
+        <h3 data-key="addStudent">Add Student Check</h3>
+        <form id="student-check-form">
+          <input type="text" id="check-cpr" placeholder="Enter CPR (9 Digits)">
+          <input type="text" id="check-phone" placeholder="Enter Phone Number">
+          <button type="submit" class="btn-primary">Check Availability</button>
+        </form>
+        <div id="check-message" class="message-banner hidden"></div>
+      </div>
+
+      <!-- Student Directory Form (Shown after check) -->
+      <div id="student-entry-card" class="card hidden">
+        <h3 data-key="studentDetails">Student Information Entry</h3>
+        <form id="save-student-form">
+          <input type="text" id="student-name" placeholder="Full Name" required>
+          <input type="text" id="student-cpr" placeholder="CPR Number" required readonly>
+          <input type="text" id="student-phone" placeholder="Phone Number" required readonly>
+          <input type="text" id="student-degree" placeholder="Degree / Qualification" required>
+          
+          <label for="student-tamkeen">Tamkeen Status:</label>
+          <select id="student-tamkeen">
+            <option value="Accepted">Accepted</option>
+            <option value="Under Processing">Under Processing</option>
+            <option value="Withdrawn">Withdrawn</option>
+          </select>
+
+          <textarea id="student-comment" placeholder="Comments..."></textarea>
+          
+          <label>Upload Student CV (PDF/Word):</label>
+          <input type="file" id="student-cv" accept=".pdf,.doc,.docx">
+
+          <label for="student-date">Reminder Target Date:</label>
+          <input type="date" id="student-date" required>
+
+          <button type="submit" class="btn-success">Save Student Data</button>
+        </form>
+      </div>
+
+      <!-- Student Directory Table -->
+      <div class="card">
+        <h3>Student Directory</h3>
+        <div class="table-responsive">
+          <table id="directory-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>CPR</th>
+                <th>Phone</th>
+                <th>Tamkeen Status</th>
+                <th>Assign to Class</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="directory-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Operator View: Courses & Classes -->
+    <section id="operator-view" class="role-view hidden">
+      <div class="card">
+        <h3>Add New Course</h3>
+        <form id="add-course-form">
+          <input type="text" id="course-title" placeholder="Course Name" required>
+          <button type="submit" class="btn-primary">Create Course</button>
+        </form>
+      </div>
+
+      <div id="operator-courses-container" class="card">
+        <h3>Active Courses</h3>
+        <div id="courses-list" class="grid-list"></div>
+      </div>
+
+      <!-- Class Management View -->
+      <div id="class-management-card" class="card hidden">
+        <div class="card-header-flex">
+          <h3 id="selected-class-title">Class Roster</h3>
+          <button id="download-class-excel-btn" class="btn-secondary">Export Class Excel</button>
+        </div>
+        <div class="table-responsive">
+          <table id="class-students-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>CPR</th>
+                <th>Tamkeen Status</th>
+                <th>Submitted By Employee</th>
+                <th>Comment</th>
+              </tr>
+            </thead>
+            <tbody id="class-students-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Manager View: Staff & System Administration -->
+    <section id="manager-view" class="role-view hidden">
+      <div class="card">
+        <h3>System User Management</h3>
+        <div class="table-responsive">
+          <table id="users-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manager View-Only Courses -->
+      <div class="card">
+        <h3>View Courses & Enrolled Students</h3>
+        <div id="manager-courses-list" class="grid-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Live Chat Widget (Floating Bottom-Right) -->
+  <div id="chat-widget" class="chat-widget collapsed">
+    <div id="chat-header" class="chat-header">
+      <span>Internal Live Chat</span>
+      <button id="toggle-chat-btn">-</button>
+    </div>
+    <div id="chat-body" class="chat-body hidden">
+      <div class="chat-sidebar">
+        <h4>Users & Groups</h4>
+        <ul id="chat-users-list"></ul>
+      </div>
+      <div class="chat-main">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input-text" placeholder="Type a message or drag student profile...">
+          <input type="file" id="chat-file-input" class="hidden">
+          <button id="chat-attach-btn">📎</button>
+          <button id="chat-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Footer -->
+  <footer class="app-footer">
+    <span id="footer-datetime">Loading Date & Time...</span>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
